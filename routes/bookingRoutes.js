@@ -1,0 +1,10 @@
+const express=require("express"); const router=express.Router();
+const {getAllBookings,getBookingById,createBooking,updateBooking,deleteBooking,getCalendarData,checkAvailability,getPricingPreview}=require("../controllers/bookingController");
+const {protect}=require("../middleware/authMiddleware");
+router.use(protect);
+router.get("/calendar",getCalendarData);
+router.get("/availability",checkAvailability);
+router.post("/pricing-preview",getPricingPreview);
+router.route("/").get(getAllBookings).post(createBooking);
+router.route("/:id").get(getBookingById).put(updateBooking).delete(deleteBooking);
+module.exports=router;

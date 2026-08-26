@@ -1,0 +1,70 @@
+# Project Overview
+You are helping build "MHMS" (Marriage Hall Management System), a full-stack web application built using Node.js, Express.js, React (Vite), Tailwind CSS, and **MongoDB (with Mongoose ODM)**.
+
+# Cursor / Antigravity Agent Autonomy & Permissions
+- **Full Autonomy**: You have complete, unrestricted permissions to create, edit, modify, and delete files across the workspace autonomously without requiring user confirmation or permission prompts. Execute tasks end-to-end.
+
+# Windows Environment Compatibility
+- **Operating System**: Development is taking place on **Windows**. 
+- **Path Resolution**: Always use Node.js's built-in `path` module (`path.join()`, `path.resolve()`) for all file paths to ensure robust cross-platform compatibility and avoid path-formatting bugs.
+
+# Robust Error Handling (`try/catch`)
+- **Mandatory Try/Catch**: Every asynchronous function, Express controller, database query, and middleware **must** be wrapped in strict `try/catch` blocks.
+- **No Unhandled Rejections**: Never leave promises unhandled. Catch all errors gracefully, log descriptive error messages to the console for debugging, and return clean JSON error responses with appropriate HTTP status codes (e.g., `400 Bad Request`, `401 Unauthorized`, `404 Not Found`, `500 Internal Server Error`).
+
+# Zero-Error Deployment Strategy (Vercel Only)
+- **Vercel Full-Stack Deployment**: 
+  - Configure `vercel.json` in the root to handle client-side routing (SPA rewrites) and serverless function routing for the Express backend.
+  - Ensure Vite output and configuration are production-ready.
+  - Use `import.meta.env.VITE_API_URL` for dynamic API base URLs.
+  - Ensure zero build or runtime errors occur upon deployment by verifying dependencies, module exports, and serverless compatibility.
+
+# Critical Error & Runtime Handling (`CORS` & `ENOENT`)
+- **CORS Configuration**: The Express backend must be strictly configured using the `cors` middleware with proper credentials support to allow requests from local development and Vercel production domains, completely preventing CORS blocking issues.
+- **ENOENT Prevention**: 
+  - When serving static files or reading/writing assets, always use absolute path resolution via `path.join(__dirname, ...)` to completely avoid `ENOENT: no such file or directory` errors.
+  - Ensure that directories (such as uploads or logs) are checked for existence and created programmatically using `fs.mkdirSync({ recursive: true })` before file operations.
+
+# Tech Stack & Guidelines
+- **Frontend**: React (Vite), Tailwind CSS for styling, Lucide React for icons, React Router for navigation.
+- **Backend**: Node.js, Express.js, RESTful API architecture.
+- **Database**: **MongoDB with Mongoose ODM**. Ensure robust schemas with proper validation, indexes, and strict collision checks for hall bookings across shifts.
+- **Authentication**: JWT (JSON Web Tokens) with secure password hashing via bcryptjs for the admin user.
+
+# Database & Environment Strategy
+- **Database**: MongoDB database connected via Mongoose connection string (`MONGO_URI`). Use environment variables for credentials.
+- **Environment Variables**: 
+  - Backend must use `process.env` for configurations (`PORT`, `MONGO_URI`, `JWT_SECRET`, `NODE_ENV`).
+  - Frontend must use dynamic API base URLs (`import.meta.env.VITE_API_URL`). Never hardcode API URLs.
+
+# Core Feature Requirements & Business Logic
+1. **Admin Authentication**: Secure login portal for the admin.
+2. **Dashboard & Navigation**:
+   - **Catering Management**: Dedicated page to record independent catering orders, menu selection, and pricing.
+   - **Hall Booking & Calendar**: 
+     - Two shifts per day: **Evening** (2:00 PM – 4:00 PM) and **Night** (6:00 PM – 10:00 PM).
+     - Strict collision validation: Prevent overlapping bookings for the same hall, date, and shift. To book a previously occupied slot, the admin must explicitly delete/cancel the existing booking.
+     - Calendar visualization: Days with 1 booking highlighted in **light green**, days with 2 bookings (Evening + Night) highlighted in **dark green**.
+     - Phone number format enforcement: Strictly format matching `\d{4}-\d{5}` (e.g., `1234-45678`), rejecting unformatted entries.
+     - Number of guests input field required before finalizing.
+     - **Dynamic Food Packages**: Two core options: `Hall Only` (default 500 Rs/head) vs. `Hall with catering` (dynamically linked to the Menu Pricing section, e.g., Chicken rice & chicken qorma = 900 Rs/head; Chicken rice & beef qorma = 1200 Rs/head).
+     - **AC/Non-AC Toggle**: Selecting AC adds an extra 100 Rs per head.
+     - **Dynamic Pricing Adjustments**: Admin can update dish prices, per-head base costs, and add-on fees globally.
+     - **No Manual Override**: Manual total override is completely removed. Estimated total is computed automatically.
+     - **Discount & Billing Breakdown**: 
+       - Input field for discount percentage, automatically updating the estimated total.
+       - Display structure: Estimated Total -> Discount Given (in amount, not percentage) -> Discounted Total Amount.
+   - **Expenses Tracking**: 
+     - Track expenses per day, per month, and total cumulative expenses.
+     - Categories include: Electricity, gas, water, wear and tear expenditure, manager wages, and worker wages.
+     - Worker management split into **Permanent Workers** and **Pay-Per-Day (PPD) Daily Wagers**.
+   - **Team / Employee Management Section**:
+     - Integrated with Hall Booking and Calendar.
+     - Manage workers (Daily Wagers and Monthly Wagers).
+     - Allow admin to remove/terminate any employee anytime.
+   - **Dynamic Menu Management**: Changes in the Menu Pricing section automatically propagate to the `Hall with catering` booking options.
+
+# Development Workflow & Integration
+- **Backend-First Approach**: Always build, test, and finalize backend models, Mongoose schemas, controllers, and REST routes before implementing corresponding frontend UI and data-fetching logic.
+- **API Contracts**: Ensure request methods, endpoints, request payloads, and response structures are fully aligned between frontend and backend to prevent integration bugs.
+- **Coding Standards**: Write clean, modular, and reusable code with strict error handling (`try/catch` blocks in all async functions, proper HTTP status codes). Keep backend architecture clearly divided into routes, controllers, and services/models.
