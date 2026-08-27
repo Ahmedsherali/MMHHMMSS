@@ -19,7 +19,13 @@ const workerRoutes  =require("./routes/workerRoutes");
 connectDB();
 const app=express();
 
-const allowedOrigins=["http://localhost:5173","http://localhost:5174","http://localhost:3000",process.env.CLIENT_URL].filter(Boolean);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  process.env.CLIENT_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+].filter(Boolean);
 app.use(cors({
   origin:(origin,cb)=>{ if(!origin||allowedOrigins.includes(origin)) return cb(null,true); cb(new Error("CORS: "+origin+" not allowed.")); },
   credentials:true, methods:["GET","POST","PUT","DELETE","OPTIONS"], allowedHeaders:["Content-Type","Authorization"],
@@ -39,6 +45,9 @@ app.use("/api/workers", workerRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT=process.env.PORT||5000;
-app.listen(PORT,()=>console.log("MHMS Server running in "+process.env.NODE_ENV+" mode on port "+PORT));
-module.exports=app;
+// Only bind a port when running locally (not inside Vercel serverless)
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log("MHMS Server running in " + process.env.NODE_ENV + " mode on port " + PORT));
+}
+module.exports = app;
