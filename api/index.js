@@ -1,24 +1,28 @@
-// Vercel serverless entry point
-// Explicitly awaits DB connection on cold start before handling any request.
-const app = require("../server");
+/**
+ * Vercel Serverless Entry Point
+ * - Awaits DB connection on cold start (readyState check avoids reconnecting on warm invocations)
+ * - Delegates all requests to the Express app
+ */
+const mongoose  = require("mongoose");
 const connectDB = require("../config/db");
+const app       = require("../server");
 
-let isConnected = false;
+let dbReady = false;
 
 module.exports = async (req, res) => {
-  if (!isConnected) {
+  // Re-check live readyState — module-level flag can be stale if Mongoose drops the connection
+  if (!dbReady || mongoose.connection.readyState !== 1) {
     try {
       await connectDB();
-      isConnected = true;
+      dbReady = true;
     } catch (err) {
       console.error("[Serverless] DB connection failed:", err.message);
       return res.status(500).json({
         success: false,
-        message: "Server error: could not connect to database.",
+        message: "Database unavailable. Please try again in a moment.",
       });
     }
   }
-  // Delegate to Express app
   return app(req, res);
 };
 
