@@ -4,19 +4,26 @@ import { Building2, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@mhms.com');
-  const [password, setPassword] = useState('Admin@1234');
-  const [error, setError] = useState('');
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
+  const [error, setError]             = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { login }  = useAuth();
+  const navigate   = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Client-side length guard mirrors the backend bcrypt limit
+    if (password.length > 72) {
+      setError('Password must not exceed 72 characters.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
@@ -59,9 +66,11 @@ export default function LoginPage() {
                 <input
                   type="email"
                   required
+                  autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@mhms.com"
+                  placeholder="admin@example.com"
+                  maxLength={254}
                   className="w-full bg-slate-950 border border-slate-700 text-white rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600"
                 />
               </div>
@@ -76,9 +85,11 @@ export default function LoginPage() {
                 <input
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  maxLength={72}
                   className="w-full bg-slate-950 border border-slate-700 text-white rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600"
                 />
               </div>
@@ -101,14 +112,9 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          <div className="mt-6 pt-4 border-t border-slate-800 text-center">
-            <p className="text-xs text-slate-400">
-              Default credentials: <span className="text-emerald-400 font-mono">admin@mhms.com</span> / <span className="text-emerald-400 font-mono">Admin@1234</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>
   );
 }
+
