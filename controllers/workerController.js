@@ -336,18 +336,45 @@ const deleteWorker = async (req, res) => {
     res.status(200).json({
       success: true,
       message: `Worker "${worker.name}" has been terminated. Historical records remain preserved.`,
-      data: {
-        id: worker._id,
-        name: worker.name,
-        type: worker.type,
-        status: worker.status,
-      },
+      data: { id: worker._id, name: worker.name, type: worker.type, status: worker.status },
     });
   } catch (error) {
     console.error("Terminate Worker Error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to terminate worker.", error: error.message });
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════
+// DELETE /api/workers/:id/remove  (Hard / permanent delete)
+// Only permitted when worker.status === "Terminated".
+// Completely removes the document — use when historical payroll data
+// has already been exported or is no longer needed.
+// ════════════════════════════════════════════════════════════════════
+const removeWorker = async (req, res) => {
+  try {
+    const worker = await Worker.findById(req.params.id);
+    if (!worker) {
+      return res.status(404).json({ success: false, message: "Worker not found." });
+    }
+
+    if (worker.status !== "Terminated") {
+      return res.status(400).json({
+        success: false,
+        message: "Only terminated workers can be permanently removed. Terminate the worker first.",
+      });
+    }
+
+    await Worker.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: `Worker "${worker.name}" has been permanently removed from the roster.`,
+    });
+  } catch (error) {
+    console.error("Remove Worker Error:", error.message);
     res.status(500).json({
       success: false,
-      message: "Failed to terminate worker.",
+      message: "Failed to permanently remove worker.",
       error: error.message,
     });
   }
@@ -360,4 +387,6 @@ module.exports = {
   createWorker,
   updateWorker,
   deleteWorker,
+  removeWorker,
 };
+
