@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,7 +9,8 @@ import {
   BookOpenText, 
   LogOut,
   Building2,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,14 +25,57 @@ const navigation = [
 
 export default function Sidebar({ isOpen, onClose }) {
   const { logout, admin } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutModal(false);
+    logout();
+  };
 
   return (
     <>
+      {/* Mobile overlay */}
       {isOpen && (
         <div 
           className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
+      )}
+
+      {/* ── Logout confirmation modal ───────────────────────────────────── */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 space-y-5">
+            {/* Icon + heading */}
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-rose-500" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Close the application?</h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  You will be signed out of the MHMS Portal. Any unsaved changes will be lost.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogoutConfirm}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-md shadow-rose-600/25 transition-colors"
+              >
+                Yes, Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <aside
@@ -81,6 +125,7 @@ export default function Sidebar({ isOpen, onClose }) {
           })}
         </nav>
 
+        {/* User profile + logout trigger */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/40">
           <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/40 border border-slate-800">
             <div className="flex items-center space-x-3 min-w-0">
@@ -93,7 +138,7 @@ export default function Sidebar({ isOpen, onClose }) {
               </div>
             </div>
             <button
-              onClick={logout}
+              onClick={() => setShowLogoutModal(true)}
               title="Logout"
               className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
             >
