@@ -120,6 +120,16 @@ export default function HallBookingPage() {
     setFormSuccess('');
     setIsSubmitting(true);
 
+    // Past-date guard — compare at midnight to ignore time-of-day
+    const selected = new Date(formData.bookingDate + 'T00:00:00');
+    const today    = new Date(); today.setHours(0, 0, 0, 0);
+    if (selected < today) {
+      const display = selected.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      setFormError(`${display} has already passed and is no longer available for booking.`);
+      setIsSubmitting(false);
+      return;
+    }
+
     const phoneRegex = /^\d{4}-\d{7}$/;
     if (!phoneRegex.test(formData.phone.trim())) {
       setFormError('Phone number must strictly match format XXXX-XXXXXXX (e.g., 0300-1234567).');
