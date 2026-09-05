@@ -1,0 +1,25 @@
+{
+  "short_name": "56 Events",
+  "name": "56 Events Management System",
+  "description": "Internal management portal for 56 Events marriage hall operations.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#041638",
+  "theme_color": "#041638",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

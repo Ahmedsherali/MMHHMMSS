@@ -8,3 +8,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </React.StrictMode>
 );
+
+// ── Register service worker (PWA) ─────────────────────────────────────
+// Runs after 'load' so it never blocks the initial render.
+// sw.js passes /api/* requests straight through — no token interception.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => console.log('[SW] Registered, scope:', reg.scope))
+      .catch((err) => console.warn('[SW] Registration failed:', err));
+  });
+}
