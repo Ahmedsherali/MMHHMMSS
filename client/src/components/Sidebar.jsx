@@ -91,8 +91,8 @@ export default function Sidebar({ isOpen, onClose }) {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-none tracking-tight">MHMS Portal</h1>
-              <span className="text-xs text-emerald-400 font-medium">Marriage Hall System</span>
+              <h1 className="font-bold text-lg leading-none tracking-tight">56 EVENTS</h1>
+              <span className="text-xs text-emerald-400 font-medium">Management System</span>
             </div>
           </div>
           <button 

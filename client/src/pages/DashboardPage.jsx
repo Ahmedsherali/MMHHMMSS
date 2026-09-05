@@ -5,7 +5,6 @@ import {
   UtensilsCrossed, 
   Receipt, 
   Users, 
-  Sparkles,
   ArrowUpRight
 } from 'lucide-react';
 import api from '../services/api';
@@ -67,14 +66,7 @@ export default function DashboardPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
         <div>
-          <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Operational Summary</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Marriage Hall Management</h1>
-          <p className="text-slate-300 text-sm mt-1 max-w-xl">
-            Live overview of venue reservations, dynamic catering breakdowns, daily operational expenses, and team shifts.
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">56 EVENTS</h1>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link

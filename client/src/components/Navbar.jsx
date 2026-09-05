@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, User, ShieldCheck } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar({ onMenuClick, title }) {
@@ -20,10 +20,6 @@ export default function Navbar({ onMenuClick, title }) {
       </div>
 
       <div className="flex items-center space-x-4">
-        <div className="hidden sm:flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200/60 text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Admin Authenticated</span>
-        </div>
         <div className="flex items-center space-x-2 text-sm font-medium text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
           <User className="w-4 h-4 text-slate-500" />
           <span>{admin?.name || 'Admin'}</span>
