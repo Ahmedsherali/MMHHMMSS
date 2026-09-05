@@ -24,7 +24,7 @@ function AppLayout() {
       case '/bookings': return 'Hall Bookings & Calendar';
       case '/catering': return 'Catering Orders';
       case '/menu': return 'Menu & Global Pricing';
-      case '/expenses': return 'Expenses & P&L Tracking';
+      case '/expenses': return 'Expenses Tracking';
       case '/team': return 'Team & Workers';
       case '/credentials': return 'Credentials';
       default: return 'MHMS Portal';

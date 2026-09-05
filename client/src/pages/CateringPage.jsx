@@ -141,8 +141,7 @@ export default function CateringPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Independent Catering Orders</h1>
-        <p className="text-sm text-slate-500 mt-1">Manage off-site catering, food packages, and dish selections.</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Catering Orders</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -184,7 +183,7 @@ export default function CateringPage() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Phone (\d{4}-\d{7}) *
+                  Phone *
                 </label>
                 <input
                   type="text"
@@ -202,7 +201,6 @@ export default function CateringPage() {
                   maxLength={12}
                   className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden font-mono"
                 />
-                <span className="text-[11px] text-slate-400">Format: 0300-1234567 (4 digits, hyphen, 7 digits)</span>
               </div>
             </div>
 

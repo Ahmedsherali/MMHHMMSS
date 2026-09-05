@@ -75,10 +75,7 @@ export default function MenuPricingPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Menu Pricing Management</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Global dish catalog. Price adjustments instantly reflect across new Hall Bookings & Catering calculations.
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Menu Pricing</h1>
         </div>
         <button
           onClick={() => {

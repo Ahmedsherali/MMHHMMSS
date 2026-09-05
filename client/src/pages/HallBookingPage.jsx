@@ -9,8 +9,7 @@ import {
   Utensils, 
   Percent, 
   ChevronLeft, 
-  ChevronRight,
-  Info
+  ChevronRight
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -520,9 +519,7 @@ export default function HallBookingPage() {
         <div className="bg-gradient-to-b from-slate-900 to-slate-950 text-white p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col justify-between h-fit sticky top-20">
           <div>
             <div className="border-b border-slate-800 pb-4 mb-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Auto-Calculated</span>
               <h3 className="text-lg font-bold text-white mt-0.5">Billing Breakdown</h3>
-              <p className="text-xs text-slate-400">Manual total override is removed per policy.</p>
             </div>
 
             {pricingPreview ? (
@@ -582,11 +579,6 @@ export default function HallBookingPage() {
                 Enter booking details to see real-time calculation.
               </div>
             )}
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center space-x-2">
-            <Info className="w-4 h-4 text-slate-400 flex-shrink-0" />
-            <span>Strict collision check prevents duplicate shifts on the same date.</span>
           </div>
         </div>
       </div>
