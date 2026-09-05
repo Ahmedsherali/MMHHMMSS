@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpenText, Plus, Edit2, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const CATEGORIES = ['Rice', 'Curry', 'Dessert', 'Beverage', 'Other'];
 
@@ -16,6 +17,7 @@ export default function MenuPricingPage() {
   });
 
   const [error, setError] = useState('');
+  const [confirmTarget, setConfirmTarget] = useState(null);
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
@@ -59,15 +61,20 @@ export default function MenuPricingPage() {
     }
   };
 
-  const handleDelete = async (id, dishName) => {
-    if (!window.confirm(`Delete "${dishName}" from menu pricing?`)) return;
+  const requestDelete = (id, dishName) => {
+    setConfirmTarget({ id, dishName });
+  };
+
+  const executeDelete = async () => {
+    const { id } = confirmTarget;
+    setConfirmTarget(null);
     try {
       const res = await api.delete(`/menu/${id}`);
       if (res.data.success) {
         fetchMenuItems();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete item.');
+      setError(err.response?.data?.message || 'Failed to delete item.');
     }
   };
 
@@ -137,7 +144,7 @@ export default function MenuPricingPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(dish._id, dish.dishName)}
+                            onClick={() => requestDelete(dish._id, dish.dishName)}
                             className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -243,6 +250,15 @@ export default function MenuPricingPage() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        open={!!confirmTarget}
+        title={`Delete "${confirmTarget?.dishName}"?`}
+        message="This dish will be permanently removed from the menu catalog. Future bookings will not include it."
+        confirmLabel="Yes, Delete"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
+
     </div>
   );
 }

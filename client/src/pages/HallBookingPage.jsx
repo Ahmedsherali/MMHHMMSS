@@ -12,6 +12,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function HallBookingPage() {
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
@@ -37,6 +38,7 @@ export default function HallBookingPage() {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   useEffect(() => {
     fetchCalendarData();
@@ -173,8 +175,13 @@ export default function HallBookingPage() {
     }
   };
 
-  const handleCancelBooking = async (id) => {
-    if (!window.confirm('Cancel this booking to free up the date and shift slot?')) return;
+  const requestCancelBooking = (id) => {
+    setConfirmTarget({ id });
+  };
+
+  const executeCancelBooking = async () => {
+    const { id } = confirmTarget;
+    setConfirmTarget(null);
     try {
       const res = await api.delete(`/bookings/${id}`);
       if (res.data.success) {
@@ -182,7 +189,7 @@ export default function HallBookingPage() {
         fetchBookings();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to cancel booking.');
+      setFormError(err.response?.data?.message || 'Failed to cancel booking.');
     }
   };
 
@@ -644,7 +651,7 @@ export default function HallBookingPage() {
                   <td className="px-6 py-4 text-right">
                     {b.status !== 'Cancelled' && (
                       <button
-                        onClick={() => handleCancelBooking(b._id)}
+                        onClick={() => requestCancelBooking(b._id)}
                         className="text-xs text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center space-x-1 p-1 rounded-md hover:bg-rose-50"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -658,6 +665,15 @@ export default function HallBookingPage() {
           </table>
         </div>
       </div>
+      <ConfirmModal
+        open={!!confirmTarget}
+        title="Cancel Booking?"
+        message="This will free up the date and shift slot. The booking record will be removed."
+        confirmLabel="Yes, Cancel Slot"
+        onConfirm={executeCancelBooking}
+        onCancel={() => setConfirmTarget(null)}
+      />
+
     </div>
   );
 }

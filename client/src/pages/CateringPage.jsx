@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UtensilsCrossed, Plus, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function CateringPage() {
   const [orders, setOrders] = useState([]);
@@ -19,6 +20,7 @@ export default function CateringPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -133,15 +135,20 @@ export default function CateringPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this catering order record?')) return;
+  const requestDelete = (id) => {
+    setConfirmTarget({ id });
+  };
+
+  const executeDelete = async () => {
+    const { id } = confirmTarget;
+    setConfirmTarget(null);
     try {
       const res = await api.delete(`/catering/${id}`);
       if (res.data.success) {
         fetchOrders();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete order.');
+      setError(err.response?.data?.message || 'Failed to delete order.');
     }
   };
 
@@ -371,7 +378,7 @@ export default function CateringPage() {
                   <td className="px-6 py-4 font-bold font-mono text-emerald-700">Rs. {o.discountedTotal?.toLocaleString()}</td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      onClick={() => handleDelete(o._id)}
+                      onClick={() => requestDelete(o._id)}
                       className="text-rose-600 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 font-semibold"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -383,6 +390,15 @@ export default function CateringPage() {
           </table>
         </div>
       </div>
+      <ConfirmModal
+        open={!!confirmTarget}
+        title="Delete Catering Order?"
+        message="This catering order record will be permanently removed from the system."
+        confirmLabel="Yes, Delete"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
+
     </div>
   );
 }

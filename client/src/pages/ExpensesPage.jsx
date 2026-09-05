@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Receipt, Plus, Trash2, CheckCircle2, AlertCircle, Filter } from 'lucide-react';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const CATEGORIES = [
   'Electricity',
@@ -32,6 +33,7 @@ export default function ExpensesPage() {
   });
 
   const [error, setError] = useState('');
+  const [confirmTarget, setConfirmTarget] = useState(null);
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
@@ -114,8 +116,13 @@ export default function ExpensesPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this expense transaction?')) return;
+  const requestDelete = (id) => {
+    setConfirmTarget({ id });
+  };
+
+  const executeDelete = async () => {
+    const { id } = confirmTarget;
+    setConfirmTarget(null);
     try {
       const res = await api.delete(`/expenses/${id}`);
       if (res.data.success) {
@@ -123,7 +130,7 @@ export default function ExpensesPage() {
         fetchSummary();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete expense.');
+      setError(err.response?.data?.message || 'Failed to delete expense.');
     }
   };
 
@@ -240,7 +247,7 @@ export default function ExpensesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
-                      onClick={() => handleDelete(e._id)}
+                      onClick={() => requestDelete(e._id)}
                       className="text-rose-600 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -362,6 +369,15 @@ export default function ExpensesPage() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        open={!!confirmTarget}
+        title="Delete Expense?"
+        message="This expense transaction will be permanently removed from the records."
+        confirmLabel="Yes, Delete"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmTarget(null)}
+      />
+
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 // Phone auto-formatter — strips non-digits, caps at 11, inserts hyphen after 4
 const formatPhone = (raw) => {
@@ -21,6 +22,7 @@ export default function TeamManagementPage() {
   const [formData, setFormData]         = useState(EMPTY_FORM);
   const [addError, setAddError]         = useState('');
   const [addSuccess, setAddSuccess]     = useState('');
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   // Edit modal
   const [editTarget, setEditTarget]     = useState(null);
@@ -65,21 +67,31 @@ export default function TeamManagementPage() {
   };
 
   // Soft-terminate (preserves payroll history)
-  const handleTerminate = async (id, name) => {
-    if (!window.confirm('Terminate "' + name + '"? Status becomes Terminated and history is preserved.')) return;
+  const requestTerminate = (id, name) => {
+    setConfirmTarget({ action: 'terminate', id, name });
+  };
+
+  const executeTerminate = async () => {
+    const { id } = confirmTarget;
+    setConfirmTarget(null);
     try {
       const res = await api.delete('/workers/' + id);
       if (res.data.success) { fetchWorkers(); fetchStats(); }
-    } catch (err) { alert(err.response?.data?.message || 'Failed to terminate.'); }
+    } catch (err) { setAddError(err.response?.data?.message || 'Failed to terminate.'); }
   };
 
   // Hard-delete (terminated workers only)
-  const handleRemove = async (id, name) => {
-    if (!window.confirm('Permanently remove "' + name + '" from the roster? This cannot be undone.')) return;
+  const requestRemove = (id, name) => {
+    setConfirmTarget({ action: 'remove', id, name });
+  };
+
+  const executeRemove = async () => {
+    const { id } = confirmTarget;
+    setConfirmTarget(null);
     try {
       const res = await api.delete('/workers/' + id + '/remove');
       if (res.data.success) { fetchWorkers(); fetchStats(); }
-    } catch (err) { alert(err.response?.data?.message || 'Failed to remove worker.'); }
+    } catch (err) { setAddError(err.response?.data?.message || 'Failed to remove worker.'); }
   };
 
   // Open Edit modal pre-filled with current worker values
@@ -202,7 +214,7 @@ export default function TeamManagementPage() {
                           <span>Edit</span>
                         </button>
                         <button
-                          onClick={() => handleTerminate(w._id, w.name)}
+                          onClick={() => requestTerminate(w._id, w.name)}
                           className="inline-flex items-center space-x-1 text-rose-600 hover:text-rose-700 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 border border-rose-200 transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -212,7 +224,7 @@ export default function TeamManagementPage() {
                     ) : (
                       /* Terminated workers: Remove (hard-delete) */
                       <button
-                        onClick={() => handleRemove(w._id, w.name)}
+                        onClick={() => requestRemove(w._id, w.name)}
                         className="inline-flex items-center space-x-1 text-slate-500 hover:text-rose-700 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -407,6 +419,24 @@ export default function TeamManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Confirmation modal for Terminate and Remove */}
+      <ConfirmModal
+        open={!!confirmTarget}
+        title={
+          confirmTarget?.action === 'terminate'
+            ? `Terminate "${confirmTarget?.name}"?`
+            : `Remove "${confirmTarget?.name}"?`
+        }
+        message={
+          confirmTarget?.action === 'terminate'
+            ? 'Status will change to Terminated. Payroll history is preserved and the record can still be viewed.'
+            : 'This will permanently delete the worker from the roster. This action cannot be undone.'
+        }
+        confirmLabel={confirmTarget?.action === 'terminate' ? 'Yes, Terminate' : 'Yes, Remove'}
+        onConfirm={confirmTarget?.action === 'terminate' ? executeTerminate : executeRemove}
+        onCancel={() => setConfirmTarget(null)}
+      />
 
     </div>
   );
