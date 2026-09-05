@@ -230,9 +230,6 @@ export default function HallBookingPage() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Hall Booking & Calendar</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Reserve hall shifts with automatic pricing breakdown, collision validation, and visual availability tracking.
-        </p>
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
@@ -245,11 +242,11 @@ export default function HallBookingPage() {
             <div className="flex items-center space-x-4 text-xs font-semibold mt-1">
               <span className="flex items-center space-x-1.5">
                 <span className="w-3 h-3 rounded-md bg-emerald-100 border border-emerald-400 inline-block"></span>
-                <span className="text-slate-600">1 Booking (Light Green)</span>
+                <span className="text-slate-600">1 Booking</span>
               </span>
               <span className="flex items-center space-x-1.5">
                 <span className="w-3 h-3 rounded-md bg-emerald-700 border border-emerald-800 inline-block"></span>
-                <span className="text-slate-600">2 Bookings (Full Day - Dark Green)</span>
+                <span className="text-slate-600">2 Bookings (Full Day)</span>
               </span>
             </div>
           </div>
@@ -333,7 +330,7 @@ export default function HallBookingPage() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Phone Number (\d{4}-\d{7}) *
+                  Phone Number *
                 </label>
                 <input
                   type="text"
@@ -351,7 +348,6 @@ export default function HallBookingPage() {
                   maxLength={12}
                   className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden font-mono"
                 />
-                <span className="text-[11px] text-slate-400">Format: 0300-1234567 (4 digits, hyphen, 7 digits)</span>
               </div>
             </div>
 
