@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal';
 export default function CateringPage() {
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
+  const [packages, setPackages] = useState([]);
   const [formData, setFormData] = useState({
     clientName: '',
     phone: '',
@@ -13,6 +14,7 @@ export default function CateringPage() {
     eventLocation: '',
     guestCount: 150,
     selectedMenuItemIds: [],
+    selectedPackageId: '',
     discountPercentage: 0,
     notes: '',
   });
@@ -25,6 +27,7 @@ export default function CateringPage() {
   useEffect(() => {
     fetchOrders();
     fetchMenuItems();
+    fetchPackages();
   }, []);
 
   const fetchOrders = async () => {
@@ -62,17 +65,23 @@ export default function CateringPage() {
       const updated = exists
         ? prev.selectedMenuItemIds.filter((id) => id !== dishId)
         : [...prev.selectedMenuItemIds, dishId];
-      return { ...prev, selectedMenuItemIds: updated };
+      return { ...prev, selectedMenuItemIds: updated, selectedPackageId: '' };
     });
   };
 
   const calculateEstimate = () => {
-    const selectedDishes = menuItems.filter((m) => formData.selectedMenuItemIds.includes(m._id));
-    const pricePerHead = selectedDishes.reduce((sum, d) => sum + (d.pricePerHead || 0), 0);
+    const selectedPkg = packages.find((p) => p._id === formData.selectedPackageId);
+    let pricePerHead = 0;
+    if (selectedPkg) {
+      pricePerHead = selectedPkg.pricePerHead;
+    } else {
+      const selectedDishes = menuItems.filter((m) => formData.selectedMenuItemIds.includes(m._id));
+      pricePerHead = selectedDishes.reduce((sum, d) => sum + (d.pricePerHead || 0), 0);
+    }
     const estTotal = pricePerHead * Number(formData.guestCount || 0);
     const discAmount = (estTotal * Number(formData.discountPercentage || 0)) / 100;
     const finalTotal = estTotal - discAmount;
-    return { pricePerHead, estTotal, discAmount, finalTotal };
+    return { pricePerHead, estTotal, discAmount, finalTotal, packageName: selectedPkg?.title };
   };
 
   const handleSubmit = async (e) => {
@@ -95,19 +104,28 @@ export default function CateringPage() {
       return;
     }
 
-    if (formData.selectedMenuItemIds.length === 0) {
-      setError('Please select at least one menu item for the catering order.');
+    if (formData.selectedMenuItemIds.length === 0 && !formData.selectedPackageId) {
+      setError('Please select at least one menu item or a package for the catering order.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const selectedDishes = menuItems.filter((m) => formData.selectedMenuItemIds.includes(m._id));
-      const formattedItems = selectedDishes.map((d) => ({
-        menuItem: d._id,
-        dishName: d.dishName,
-        pricePerHead: d.pricePerHead,
-      }));
+      const selectedPkg = packages.find((p) => p._id === formData.selectedPackageId);
+      let formattedItems = [];
+      if (selectedPkg) {
+        formattedItems = [{
+          dishName: `Package: ${selectedPkg.title} (${selectedPkg.items})`,
+          pricePerHead: selectedPkg.pricePerHead,
+        }];
+      } else {
+        const selectedDishes = menuItems.filter((m) => formData.selectedMenuItemIds.includes(m._id));
+        formattedItems = selectedDishes.map((d) => ({
+          menuItem: d._id,
+          dishName: d.dishName,
+          pricePerHead: d.pricePerHead,
+        }));
+      }
 
       const payload = {
         clientName: formData.clientName,
@@ -117,7 +135,9 @@ export default function CateringPage() {
         guestCount: Number(formData.guestCount),
         selectedMenuItems: formattedItems,
         discountPercentage: Number(formData.discountPercentage) || 0,
-        notes: formData.notes,
+        notes: selectedPkg
+          ? `${formData.notes ? formData.notes + ' | ' : ''}Package: ${selectedPkg.title}`
+          : formData.notes,
       };
 
       const res = await api.post('/catering', payload);
@@ -130,6 +150,7 @@ export default function CateringPage() {
           eventLocation: '',
           guestCount: 150,
           selectedMenuItemIds: [],
+          selectedPackageId: '',
           discountPercentage: 0,
           notes: '',
         });
@@ -296,6 +317,67 @@ export default function CateringPage() {
               </div>
             </div>
 
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                  <Package className="w-4 h-4 text-emerald-600" />
+                  <span>Select Package</span>
+                </span>
+                {formData.selectedPackageId ? (
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, selectedPackageId: '' }))}
+                    className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors"
+                  >
+                    Deselect Package
+                  </button>
+                ) : (
+                  <span className="text-xs text-slate-400">Choose a pre-set event package</span>
+                )}
+              </div>
+
+              {packages.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+                  {packages.map((pkg) => {
+                    const isSelected = formData.selectedPackageId === pkg._id;
+                    return (
+                      <div
+                        key={pkg._id}
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            selectedPackageId: isSelected ? '' : pkg._id,
+                            selectedMenuItemIds: isSelected ? prev.selectedMenuItemIds : [],
+                          }));
+                        }}
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-600 shadow-sm ring-2 ring-emerald-500/50'
+                            : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className={`text-xs font-bold ${isSelected ? 'text-emerald-900' : 'text-slate-800'}`}>
+                            {pkg.title}
+                          </h4>
+                          <span className={`font-mono text-xs font-extrabold whitespace-nowrap ${isSelected ? 'text-emerald-700' : 'text-slate-700'}`}>
+                            Rs. {pkg.pricePerHead.toLocaleString()}/head
+                          </span>
+                        </div>
+                        {pkg.items && (
+                          <p className="text-[11px] text-slate-500 mt-1.5 line-clamp-2">
+                            {pkg.items}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">No packages created yet. You can create custom packages from the Packages page.</p>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
                 Discount Percentage (0 – 100%)
@@ -324,7 +406,9 @@ export default function CateringPage() {
           <h3 className="text-base font-bold border-b border-slate-800 pb-3">Catering Billing Summary</h3>
           <div className="space-y-3 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-800">
-              <span className="text-slate-400">Total Price / Head:</span>
+              <span className="text-slate-400">
+                {estimate.packageName ? `Total Price / Head (${estimate.packageName}):` : 'Total Price / Head:'}
+              </span>
               <span className="font-mono font-bold text-emerald-400">Rs. {estimate.pricePerHead}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800">

@@ -9,7 +9,8 @@ import {
   Utensils, 
   Percent, 
   ChevronLeft, 
-  ChevronRight
+  ChevronRight,
+  Package
 } from 'lucide-react';
 import api from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
@@ -20,6 +21,7 @@ export default function HallBookingPage() {
   const [calendarData, setCalendarData] = useState({});
   const [bookings, setBookings] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
+  const [packages, setPackages] = useState([]);
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -30,6 +32,7 @@ export default function HallBookingPage() {
     guestCount: 200,
     isAC: false,
     menuItemIds: [],
+    selectedPackageId: '',
     discountPercentage: 0,
     notes: '',
   });
@@ -44,6 +47,7 @@ export default function HallBookingPage() {
     fetchCalendarData();
     fetchBookings();
     fetchMenuItems();
+    fetchPackages();
   }, [calendarMonth, calendarYear]);
 
   useEffect(() => {
@@ -55,6 +59,7 @@ export default function HallBookingPage() {
     formData.guestCount,
     formData.isAC,
     formData.menuItemIds,
+    formData.selectedPackageId,
     formData.discountPercentage,
   ]);
 
@@ -102,12 +107,17 @@ export default function HallBookingPage() {
 
   const calculateLivePricing = async () => {
     try {
+      const selectedPkg = packages.find((p) => p._id === formData.selectedPackageId);
+      const customCateringPerHead = selectedPkg ? selectedPkg.pricePerHead : null;
+      const effectiveMenuIds = selectedPkg ? [] : formData.menuItemIds;
+
       const res = await api.post('/bookings/pricing-preview', {
         hallType: formData.hallType,
         guestCount: Number(formData.guestCount),
         isAC: formData.isAC,
-        menuItemIds: formData.menuItemIds,
+        menuItemIds: effectiveMenuIds,
         discountPercentage: Number(formData.discountPercentage) || 0,
+        customCateringPerHead,
       });
       if (res.data.success) {
         setPricingPreview(res.data.pricing);
@@ -121,7 +131,7 @@ export default function HallBookingPage() {
       const updated = exists
         ? prev.menuItemIds.filter((id) => id !== dishId)
         : [...prev.menuItemIds, dishId];
-      return { ...prev, menuItemIds: updated };
+      return { ...prev, menuItemIds: updated, selectedPackageId: '' };
     });
   };
 
@@ -148,14 +158,25 @@ export default function HallBookingPage() {
       return;
     }
 
-    if (formData.hallType === 'Hall with Catering' && formData.menuItemIds.length === 0) {
-      setFormError('Please select at least one menu item for Hall with Catering package.');
+    if (formData.hallType === 'Hall with Catering' && formData.menuItemIds.length === 0 && !formData.selectedPackageId) {
+      setFormError('Please select at least one menu item or a package for Hall with Catering package.');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const res = await api.post('/bookings', formData);
+      const selectedPkg = packages.find((p) => p._id === formData.selectedPackageId);
+      const customCateringPerHead = selectedPkg ? selectedPkg.pricePerHead : null;
+      const effectiveMenuIds = selectedPkg ? [] : formData.menuItemIds;
+
+      const payload = {
+        ...formData,
+        menuItemIds: effectiveMenuIds,
+        customCateringPerHead,
+        packageName: selectedPkg ? selectedPkg.title : undefined,
+      };
+
+      const res = await api.post('/bookings', payload);
       if (res.data.success) {
         setFormSuccess(`Booking confirmed for ${formData.clientName}! Total: Rs. ${res.data.data.discountedTotal.toLocaleString()}`);
         setFormData({
@@ -167,6 +188,7 @@ export default function HallBookingPage() {
           guestCount: 200,
           isAC: false,
           menuItemIds: [],
+          selectedPackageId: '',
           discountPercentage: 0,
           notes: '',
         });
@@ -489,6 +511,69 @@ export default function HallBookingPage() {
               </div>
             )}
 
+            {formData.hallType === 'Hall with Catering' && (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                    <Package className="w-4 h-4 text-emerald-600" />
+                    <span>Select Package</span>
+                  </span>
+                  {formData.selectedPackageId ? (
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, selectedPackageId: '' }))}
+                      className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors"
+                    >
+                      Deselect Package
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-400">Choose a pre-set event package</span>
+                  )}
+                </div>
+
+                {packages.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-56 overflow-y-auto pr-1">
+                    {packages.map((pkg) => {
+                      const isSelected = formData.selectedPackageId === pkg._id;
+                      return (
+                        <div
+                          key={pkg._id}
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              selectedPackageId: isSelected ? '' : pkg._id,
+                              menuItemIds: isSelected ? prev.menuItemIds : [],
+                            }));
+                          }}
+                          className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-emerald-50 border-emerald-600 shadow-sm ring-2 ring-emerald-500/50'
+                              : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className={`text-xs font-bold ${isSelected ? 'text-emerald-900' : 'text-slate-800'}`}>
+                              {pkg.title}
+                            </h4>
+                            <span className={`font-mono text-xs font-extrabold whitespace-nowrap ${isSelected ? 'text-emerald-700' : 'text-slate-700'}`}>
+                              Rs. {pkg.pricePerHead.toLocaleString()}/head
+                            </span>
+                          </div>
+                          {pkg.items && (
+                            <p className="text-[11px] text-slate-500 mt-1.5 line-clamp-2">
+                              {pkg.items}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">No packages created yet. You can create custom packages from the Packages page.</p>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
               <div className="flex items-center space-x-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
                 <input
@@ -562,7 +647,11 @@ export default function HallBookingPage() {
 
                 {formData.hallType === 'Hall with Catering' && (
                   <div className="flex justify-between py-1 border-b border-slate-800/60">
-                    <span className="text-slate-400">Catering Sum:</span>
+                    <span className="text-slate-400">
+                      {formData.selectedPackageId
+                        ? `Catering (${packages.find((p) => p._id === formData.selectedPackageId)?.title || 'Package'}):`
+                        : 'Catering Sum:'}
+                    </span>
                     <span className="font-mono text-emerald-400">Rs. {pricingPreview.cateringPricePerHead}/head</span>
                   </div>
                 )}

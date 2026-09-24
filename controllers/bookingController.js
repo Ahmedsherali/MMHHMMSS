@@ -67,8 +67,15 @@ const createBooking = async (req, res) => {
 
     let pricing;
     try {
-      pricing = await computeBookingPricing({ hallType, guestCount:Number(guestCount), isAC:Boolean(isAC), menuItemIds, discountPercentage:Number(discountPercentage) });
+      pricing = await computeBookingPricing({ hallType, guestCount:Number(guestCount), isAC:Boolean(isAC), menuItemIds, discountPercentage:Number(discountPercentage), customCateringPerHead });
     } catch (pErr) { return res.status(400).json({ success:false, message:pErr.message }); }
+
+    if (customCateringPerHead && (!pricing.selectedMenuItems || pricing.selectedMenuItems.length === 0)) {
+      pricing.selectedMenuItems = [{
+        dishName: req.body.packageName ? `Package: ${req.body.packageName}` : "Selected Event Package",
+        pricePerHead: Number(customCateringPerHead),
+      }];
+    }
 
     const booking = await HallBooking.create({
       clientName, phone, bookingDate:toUTC(bookingDate), shift, hallType,
