@@ -23,6 +23,7 @@ export default function HallBookingPage() {
   const [bookings, setBookings] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [baseVenueRate, setBaseVenueRate] = useState(500);
   const [acSettings, setAcSettings] = useState({ rate: 100, isAvailable: true });
 
   const [formData, setFormData] = useState({
@@ -51,6 +52,7 @@ export default function HallBookingPage() {
     fetchBookings();
     fetchMenuItems();
     fetchPackages();
+    fetchBaseVenueRate();
     fetchACSettings();
   }, [calendarMonth, calendarYear]);
 
@@ -65,6 +67,7 @@ export default function HallBookingPage() {
     formData.menuItemIds,
     formData.selectedPackageId,
     formData.discountPercentage,
+    baseVenueRate,
     acSettings.rate,
     acSettings.isAvailable,
   ]);
@@ -111,6 +114,17 @@ export default function HallBookingPage() {
     }
   };
 
+  const fetchBaseVenueRate = async () => {
+    try {
+      const res = await api.get('/menu/base-venue-rate');
+      if (res.data.success && res.data.data) {
+        setBaseVenueRate(res.data.data.rate ?? 500);
+      }
+    } catch (err) {
+      console.error('Failed to load base venue rate:', err);
+    }
+  };
+
   const fetchACSettings = async () => {
     try {
       const res = await api.get('/menu/ac-surcharge');
@@ -134,6 +148,7 @@ export default function HallBookingPage() {
         isAC: Boolean(formData.isAC && acSettings.isAvailable),
         menuItemIds: effectiveMenuIds,
         discountPercentage: Number(formData.discountPercentage) || 0,
+        customBasePerHead: baseVenueRate,
         customCateringPerHead,
         customACChargePerHead: acSettings.rate,
         isACAvailable: acSettings.isAvailable,
@@ -178,7 +193,7 @@ export default function HallBookingPage() {
     }
 
     if (formData.hallType === 'Hall with Catering' && formData.menuItemIds.length === 0 && !formData.selectedPackageId) {
-      setFormError('Please select at least one menu item or a package for Hall with Catering package.');
+      setFormError('Please select at least one menu item or a package for With Catering package.');
       setIsSubmitting(false);
       return;
     }
@@ -193,6 +208,7 @@ export default function HallBookingPage() {
         ...formData,
         isAC: effectiveIsAC,
         menuItemIds: effectiveMenuIds,
+        customBasePerHead: baseVenueRate,
         customCateringPerHead,
         customACChargePerHead: acSettings.rate,
         isACAvailable: acSettings.isAvailable,
@@ -508,8 +524,7 @@ export default function HallBookingPage() {
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <p className="font-bold text-sm text-slate-800">Hall Only</p>
-                  <p className="text-xs text-slate-500 mt-1">Default venue rental at base rate of Rs. 500/head.</p>
+                  <p className="font-bold text-sm text-slate-800">Only</p>
                 </div>
 
                 <div
@@ -520,8 +535,7 @@ export default function HallBookingPage() {
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <p className="font-bold text-sm text-slate-800">Hall with Catering</p>
-                  <p className="text-xs text-slate-500 mt-1">Dynamically pulls pricing from selected menu dishes.</p>
+                  <p className="font-bold text-sm text-slate-800">With Catering</p>
                 </div>
               </div>
             </div>
@@ -705,7 +719,9 @@ export default function HallBookingPage() {
               <div className="space-y-3.5 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-800/60">
                   <span className="text-slate-400">Package Type:</span>
-                  <span className="font-semibold text-slate-200">{formData.hallType}</span>
+                  <span className="font-semibold text-slate-200">
+                    {formData.hallType === 'Hall Only' ? 'Only' : 'With Catering'}
+                  </span>
                 </div>
 
                 <div className="flex justify-between py-1 border-b border-slate-800/60">
@@ -805,7 +821,7 @@ export default function HallBookingPage() {
                       {b.shift}
                     </span>
                   </td>
-                  <td className="px-6 py-4">{b.hallType}</td>
+                  <td className="px-6 py-4">{b.hallType === 'Hall Only' ? 'Only' : (b.hallType === 'Hall with Catering' ? 'With Catering' : b.hallType)}</td>
                   <td className="px-6 py-4 font-bold">{b.guestCount}</td>
                   <td className="px-6 py-4">{b.isAC ? `Yes (+${b.acChargePerHead || 100})` : 'No'}</td>
                   <td className="px-6 py-4 font-bold font-mono text-emerald-700">

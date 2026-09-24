@@ -92,6 +92,36 @@ const updateACSurcharge = async (req, res) => {
   }
 };
 
+const getBaseVenueRate = async (req, res) => {
+  try {
+    const setting = await Setting.getSetting("base_venue_rate", { rate: 500 });
+    res.status(200).json({ success: true, data: setting });
+  } catch (error) {
+    console.error("Get Base Venue Rate Error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to fetch base venue rate setting.", error: error.message });
+  }
+};
+
+const updateBaseVenueRate = async (req, res) => {
+  try {
+    const { rate } = req.body;
+    if (rate === undefined || rate === null || Number(rate) < 0) {
+      return res.status(400).json({ success: false, message: "Valid base venue rate is required." });
+    }
+    const updated = await Setting.setSetting("base_venue_rate", {
+      rate: Number(rate),
+    });
+    res.status(200).json({
+      success: true,
+      message: "Base Venue Rate updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Update Base Venue Rate Error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to update base venue rate setting.", error: error.message });
+  }
+};
+
 module.exports = {
   getAllMenuItems,
   getMenuItemById,
@@ -100,4 +130,6 @@ module.exports = {
   deleteMenuItem,
   getACSurcharge,
   updateACSurcharge,
+  getBaseVenueRate,
+  updateBaseVenueRate,
 };

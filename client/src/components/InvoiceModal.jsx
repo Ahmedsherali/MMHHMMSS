@@ -60,7 +60,7 @@ export default function InvoiceModal({ open, onClose, data }) {
 
     if (isBooking) {
       lines.push(`  Shift        :  ${data.shift}`);
-      lines.push(`  Hall Type    :  ${data.hallType}`);
+      lines.push(`  Package Type :  ${data.hallType?.replace('Hall ', '') || data.hallType}`);
     } else if (data.eventLocation) {
       lines.push(`  Location     :  ${data.eventLocation}`);
     }
@@ -247,7 +247,7 @@ export default function InvoiceModal({ open, onClose, data }) {
     ey = drawRow(isBooking ? 'Booking Date' : 'Event Date', data.date, ey);
     if (isBooking) {
       ey = drawRow('Shift', data.shift, ey);
-      ey = drawRow('Hall Type', data.hallType, ey);
+      ey = drawRow('Package Type', data.hallType?.replace('Hall ', '') || data.hallType, ey);
     }
     if (!isBooking && data.eventLocation) {
       ey = drawRow('Location', data.eventLocation, ey);
@@ -399,7 +399,7 @@ export default function InvoiceModal({ open, onClose, data }) {
               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Event</h3>
               <Row label="Date" value={data.date} />
               {isBooking && <Row label="Shift" value={data.shift} />}
-              {isBooking && <Row label="Hall" value={data.hallType} />}
+              {isBooking && <Row label="Package" value={data.hallType?.replace('Hall ', '') || data.hallType} />}
               {!isBooking && data.eventLocation && <Row label="Location" value={data.eventLocation} />}
               <Row label="Guests" value={data.guestCount} />
             </div>

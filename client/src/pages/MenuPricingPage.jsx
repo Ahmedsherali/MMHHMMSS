@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpenText, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, Wind, Check, Power } from 'lucide-react';
+import { BookOpenText, Plus, Edit2, Trash2, CheckCircle2, AlertCircle, Wind, Check, Power, Building2 } from 'lucide-react';
 import api from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -20,6 +20,13 @@ export default function MenuPricingPage() {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [success, setSuccess] = useState('');
 
+  // Base Venue Rate Settings State
+  const [baseVenueRate, setBaseVenueRate] = useState(500);
+  const [baseVenueLoading, setBaseVenueLoading] = useState(false);
+  const [baseVenueSaving, setBaseVenueSaving] = useState(false);
+  const [baseVenueSuccess, setBaseVenueSuccess] = useState('');
+  const [baseVenueError, setBaseVenueError] = useState('');
+
   // AC Surcharge Settings State
   const [acRate, setAcRate] = useState(100);
   const [isACAvailable, setIsACAvailable] = useState(true);
@@ -30,6 +37,7 @@ export default function MenuPricingPage() {
 
   useEffect(() => {
     fetchMenuItems();
+    fetchBaseVenueRate();
     fetchACSurcharge();
   }, []);
 
@@ -41,6 +49,46 @@ export default function MenuPricingPage() {
       }
     } catch (err) {
       console.error('Failed to load menu items:', err);
+    }
+  };
+
+  const fetchBaseVenueRate = async () => {
+    setBaseVenueLoading(true);
+    try {
+      const res = await api.get('/menu/base-venue-rate');
+      if (res.data.success && res.data.data) {
+        setBaseVenueRate(res.data.data.rate ?? 500);
+      }
+    } catch (err) {
+      console.error('Failed to load base venue rate settings:', err);
+    } finally {
+      setBaseVenueLoading(false);
+    }
+  };
+
+  const handleSaveBaseVenueRate = async (e) => {
+    e.preventDefault();
+    setBaseVenueError('');
+    setBaseVenueSuccess('');
+    setBaseVenueSaving(true);
+    try {
+      const rateNum = Number(baseVenueRate);
+      if (isNaN(rateNum) || rateNum < 0) {
+        setBaseVenueError('Please enter a valid, non-negative base venue rate.');
+        setBaseVenueSaving(false);
+        return;
+      }
+      const res = await api.put('/menu/base-venue-rate', {
+        rate: rateNum,
+      });
+      if (res.data.success) {
+        setBaseVenueSuccess(`Base Venue Rate updated successfully: Rs. ${rateNum}/head.`);
+        setTimeout(() => setBaseVenueSuccess(''), 4000);
+      }
+    } catch (err) {
+      setBaseVenueError(err.response?.data?.message || 'Failed to update base venue rate settings.');
+    } finally {
+      setBaseVenueSaving(false);
     }
   };
 
@@ -155,6 +203,75 @@ export default function MenuPricingPage() {
         </div>
       )}
 
+      {/* ── Base Venue Rate Control Card ─────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 shadow-xs">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2.5">
+                <h3 className="font-bold text-base text-slate-900">Base Venue Rate</h3>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>Standard Venue Rate</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {baseVenueSuccess && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <span>{baseVenueSuccess}</span>
+          </div>
+        )}
+
+        {baseVenueError && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+            <span>{baseVenueError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSaveBaseVenueRate} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+          {/* Rate Input */}
+          <div className="sm:col-span-8 md:col-span-9">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+              Price Per Head (Rs.) *
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                required
+                value={baseVenueRate}
+                onChange={(e) => setBaseVenueRate(e.target.value)}
+                placeholder="500"
+                className="w-full border border-slate-300 rounded-xl pl-3.5 pr-16 py-2.5 text-sm font-mono font-bold text-slate-800 focus:border-emerald-500 focus:outline-hidden"
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">
+                / head
+              </span>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="sm:col-span-4 md:col-span-3">
+            <button
+              type="submit"
+              disabled={baseVenueSaving || baseVenueLoading}
+              className="w-full py-2.5 px-5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center justify-center space-x-2 shadow-sm"
+            >
+              <Check className="w-4 h-4 text-emerald-400" />
+              <span>{baseVenueSaving ? 'Saving...' : 'Save Settings'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
       {/* ── AC Surcharge Control Card ─────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -174,9 +291,6 @@ export default function MenuPricingPage() {
                   <span>{isACAvailable ? 'Available' : 'Not Available'}</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Global per-head rate and availability applied across Hall Bookings & Catering Orders.
-              </p>
             </div>
           </div>
         </div>

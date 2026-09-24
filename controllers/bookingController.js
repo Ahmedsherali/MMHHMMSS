@@ -45,7 +45,7 @@ const getBookingById = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
     const { clientName, phone, bookingDate, shift, hallType, guestCount,
-            isAC=false, menuItemIds=[], discountPercentage=0, notes="", customCateringPerHead=null, customACChargePerHead=null, isACAvailable=null } = req.body;
+            isAC=false, menuItemIds=[], discountPercentage=0, notes="", customBasePerHead=null, customCateringPerHead=null, customACChargePerHead=null, isACAvailable=null } = req.body;
 
     if (!clientName||!phone||!bookingDate||!shift||!hallType||!guestCount)
       return res.status(400).json({ success:false, message:"clientName, phone, bookingDate, shift, hallType, guestCount are required." });
@@ -73,6 +73,7 @@ const createBooking = async (req, res) => {
         isAC:Boolean(isAC),
         menuItemIds,
         discountPercentage:Number(discountPercentage),
+        customBasePerHead,
         customCateringPerHead,
         customACChargePerHead,
         isACAvailable,
@@ -219,7 +220,7 @@ const checkAvailability = async (req, res) => {
 
 const getPricingPreview = async (req, res) => {
   try {
-    const { hallType, guestCount, isAC=false, menuItemIds=[], discountPercentage=0, customCateringPerHead=null, customACChargePerHead=null, isACAvailable=null } = req.body;
+    const { hallType, guestCount, isAC=false, menuItemIds=[], discountPercentage=0, customBasePerHead=null, customCateringPerHead=null, customACChargePerHead=null, isACAvailable=null } = req.body;
     if (!hallType||!guestCount) return res.status(400).json({ success:false, message:"hallType and guestCount required." });
     const pricing = await computeBookingPricing({
       hallType,
@@ -227,6 +228,7 @@ const getPricingPreview = async (req, res) => {
       isAC:Boolean(isAC),
       menuItemIds,
       discountPercentage:Number(discountPercentage),
+      customBasePerHead,
       customCateringPerHead,
       customACChargePerHead,
       isACAvailable,

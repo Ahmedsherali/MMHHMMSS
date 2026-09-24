@@ -59,7 +59,7 @@ const calculatePricing = ({
   const discountedTotal = parseFloat((estimatedTotal - discountAmount).toFixed(2));
 
   const breakdown = {
-    packageLabel:   hallType === "Hall Only" ? "Hall Only Package (Rs.500/head)" : "Hall with Catering Package",
+    packageLabel:   hallType === "Hall Only" ? `Only Package (Rs.${basePricePerHead}/head)` : "With Catering Package",
     menuItems:      resolvedMenuItems.map((m) => m.dishName + " - Rs." + m.pricePerHead + "/head"),
     baseCharge:     "Rs." + basePricePerHead + "/head x " + guests + " = Rs." + (basePricePerHead * guests),
     cateringCharge: hallType === "Hall with Catering"
@@ -93,6 +93,12 @@ const computeBookingPricing = async ({
   isACAvailable=null,
 }) => {
   try {
+    let baseRate = customBasePerHead;
+    if (baseRate === null || baseRate === undefined) {
+      const baseSetting = await Setting.getSetting("base_venue_rate", { rate: PRICING_CONSTANTS.HALL_ONLY_BASE });
+      baseRate = baseSetting.rate;
+    }
+
     let acRate = customACChargePerHead;
     let acAvailable = isACAvailable;
     if (acRate === null || acRate === undefined || acAvailable === null || acAvailable === undefined) {
@@ -108,7 +114,7 @@ const computeBookingPricing = async ({
       isAC,
       resolvedMenuItems,
       discountPercentage,
-      customBasePerHead,
+      customBasePerHead: baseRate,
       customCateringPerHead,
       customACChargePerHead: acRate,
       isACAvailable: acAvailable,
