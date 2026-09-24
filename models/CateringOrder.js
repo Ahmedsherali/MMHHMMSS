@@ -6,6 +6,8 @@ const cateringOrderSchema = new mongoose.Schema({
   eventDate:     { type: Date,   required: [true,"Event date required."] },
   eventLocation: { type: String, trim: true, default: "" },
   guestCount:    { type: Number, required: [true,"Guest count required."], min: 1 },
+  isAC:          { type: Boolean, default: false },
+  acChargePerHead: { type: Number, default: 0, min: 0 },
   selectedMenuItems: [{
     menuItem:     { type: mongoose.Schema.Types.ObjectId, ref: "MenuPricing" },
     dishName:     { type: String, required: true },
@@ -21,7 +23,9 @@ const cateringOrderSchema = new mongoose.Schema({
 }, { timestamps: true });
 cateringOrderSchema.pre("save", async function () {
   try {
-    this.totalPricePerHead = this.selectedMenuItems.reduce((s,i) => s + (i.pricePerHead||0), 0);
+    const dishesPerHead    = this.selectedMenuItems.reduce((s,i) => s + (i.pricePerHead||0), 0);
+    const acExtra          = this.isAC ? (this.acChargePerHead || 0) : 0;
+    this.totalPricePerHead = dishesPerHead + acExtra;
     this.estimatedTotal    = parseFloat((this.totalPricePerHead * this.guestCount).toFixed(2));
     this.discountAmount    = parseFloat(((this.estimatedTotal * this.discountPercentage) / 100).toFixed(2));
     this.discountedTotal   = parseFloat((this.estimatedTotal - this.discountAmount).toFixed(2));

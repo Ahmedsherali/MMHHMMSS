@@ -1,5 +1,6 @@
 "use strict";
 const MenuPricing = require("../models/MenuPricing");
+const Setting = require("../models/Setting");
 
 const PRICING_CONSTANTS = { HALL_ONLY_BASE: 500, AC_SURCHARGE: 100 };
 
@@ -17,7 +18,17 @@ const resolveMenuItems = async (menuItemIds = []) => {
   } catch (error) { throw new Error("Menu resolution failed: " + error.message); }
 };
 
-const calculatePricing = ({ hallType, guestCount, isAC=false, resolvedMenuItems=[], discountPercentage=0, customBasePerHead=null, customCateringPerHead=null }) => {
+const calculatePricing = ({
+  hallType,
+  guestCount,
+  isAC=false,
+  resolvedMenuItems=[],
+  discountPercentage=0,
+  customBasePerHead=null,
+  customCateringPerHead=null,
+  customACChargePerHead=null,
+  isACAvailable=true,
+}) => {
   if (!hallType) throw new Error("hallType is required.");
   const guests = Number(guestCount);
   if (!guests || guests < 1) throw new Error("guestCount must be at least 1.");
@@ -37,8 +48,11 @@ const calculatePricing = ({ hallType, guestCount, isAC=false, resolvedMenuItems=
     }
   }
 
-  const acChargePerHead = PRICING_CONSTANTS.AC_SURCHARGE;
-  const acSurcharge     = isAC ? acChargePerHead : 0;
+  const acChargePerHead = customACChargePerHead !== null && customACChargePerHead !== undefined
+    ? Number(customACChargePerHead)
+    : PRICING_CONSTANTS.AC_SURCHARGE;
+  const effectiveIsAC   = Boolean(isAC && isACAvailable);
+  const acSurcharge     = effectiveIsAC ? acChargePerHead : 0;
   const totalPerHead    = basePricePerHead + cateringPricePerHead + acSurcharge;
   const estimatedTotal  = parseFloat((totalPerHead * guests).toFixed(2));
   const discountAmount  = parseFloat(((estimatedTotal * discountPercentage) / 100).toFixed(2));
@@ -51,22 +65,54 @@ const calculatePricing = ({ hallType, guestCount, isAC=false, resolvedMenuItems=
     cateringCharge: hallType === "Hall with Catering"
       ? "Rs." + cateringPricePerHead + "/head x " + guests + " = Rs." + (cateringPricePerHead * guests)
       : "N/A",
-    acCharge:        isAC ? "Rs." + acChargePerHead + "/head x " + guests + " = Rs." + (acSurcharge * guests) : "Not Selected",
+    acCharge:        !isACAvailable
+      ? "AC Surcharge Not Available"
+      : (effectiveIsAC ? "Rs." + acChargePerHead + "/head x " + guests + " = Rs." + (acSurcharge * guests) : "Not Selected"),
     estimatedTotal:  "Rs." + estimatedTotal,
     discountGiven:   discountPercentage + "% = Rs." + discountAmount,
     discountedTotal: "Rs." + discountedTotal,
   };
 
-  return { basePricePerHead, cateringPricePerHead, acChargePerHead, isAC,
+  return {
+    basePricePerHead, cateringPricePerHead, acChargePerHead, isAC: effectiveIsAC, isACAvailable,
     selectedMenuItems: resolvedMenuItems, discountPercentage,
     estimatedTotal, discountAmount, discountedTotal,
-    totalPerHead, acSurcharge, guestCount: guests, breakdown };
+    totalPerHead, acSurcharge, guestCount: guests, breakdown,
+  };
 };
 
-const computeBookingPricing = async ({ hallType, guestCount, isAC=false, menuItemIds=[], discountPercentage=0, customBasePerHead=null, customCateringPerHead=null }) => {
+const computeBookingPricing = async ({
+  hallType,
+  guestCount,
+  isAC=false,
+  menuItemIds=[],
+  discountPercentage=0,
+  customBasePerHead=null,
+  customCateringPerHead=null,
+  customACChargePerHead=null,
+  isACAvailable=null,
+}) => {
   try {
+    let acRate = customACChargePerHead;
+    let acAvailable = isACAvailable;
+    if (acRate === null || acRate === undefined || acAvailable === null || acAvailable === undefined) {
+      const setting = await Setting.getSetting("ac_surcharge", { rate: PRICING_CONSTANTS.AC_SURCHARGE, isAvailable: true });
+      if (acRate === null || acRate === undefined) acRate = setting.rate;
+      if (acAvailable === null || acAvailable === undefined) acAvailable = setting.isAvailable;
+    }
+
     const resolvedMenuItems = hallType === "Hall with Catering" ? await resolveMenuItems(menuItemIds) : [];
-    return calculatePricing({ hallType, guestCount, isAC, resolvedMenuItems, discountPercentage, customBasePerHead, customCateringPerHead });
+    return calculatePricing({
+      hallType,
+      guestCount,
+      isAC,
+      resolvedMenuItems,
+      discountPercentage,
+      customBasePerHead,
+      customCateringPerHead,
+      customACChargePerHead: acRate,
+      isACAvailable: acAvailable,
+    });
   } catch (error) { throw new Error("Pricing computation failed: " + error.message); }
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UtensilsCrossed, Plus, CheckCircle2, AlertCircle, Trash2, Package } from 'lucide-react';
+import { UtensilsCrossed, Plus, CheckCircle2, AlertCircle, Trash2, Package, Wind } from 'lucide-react';
 import api from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -7,6 +7,7 @@ export default function CateringPage() {
   const [orders, setOrders] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [acSettings, setAcSettings] = useState({ rate: 100, isAvailable: true });
   const [formData, setFormData] = useState({
     clientName: '',
     phone: '',
@@ -15,6 +16,7 @@ export default function CateringPage() {
     guestCount: 150,
     selectedMenuItemIds: [],
     selectedPackageId: '',
+    isAC: false,
     discountPercentage: 0,
     notes: '',
   });
@@ -28,6 +30,7 @@ export default function CateringPage() {
     fetchOrders();
     fetchMenuItems();
     fetchPackages();
+    fetchACSettings();
   }, []);
 
   const fetchOrders = async () => {
@@ -59,6 +62,17 @@ export default function CateringPage() {
     } catch (err) { console.error('Failed to load packages:', err); }
   };
 
+  const fetchACSettings = async () => {
+    try {
+      const res = await api.get('/menu/ac-surcharge');
+      if (res.data.success && res.data.data) {
+        setAcSettings(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load AC surcharge settings:', err);
+    }
+  };
+
   const handleDishToggle = (dishId) => {
     setFormData((prev) => {
       const exists = prev.selectedMenuItemIds.includes(dishId);
@@ -71,17 +85,27 @@ export default function CateringPage() {
 
   const calculateEstimate = () => {
     const selectedPkg = packages.find((p) => p._id === formData.selectedPackageId);
-    let pricePerHead = 0;
+    let dishesPricePerHead = 0;
     if (selectedPkg) {
-      pricePerHead = selectedPkg.pricePerHead;
+      dishesPricePerHead = selectedPkg.pricePerHead;
     } else {
       const selectedDishes = menuItems.filter((m) => formData.selectedMenuItemIds.includes(m._id));
-      pricePerHead = selectedDishes.reduce((sum, d) => sum + (d.pricePerHead || 0), 0);
+      dishesPricePerHead = selectedDishes.reduce((sum, d) => sum + (d.pricePerHead || 0), 0);
     }
+    const acExtra = (formData.isAC && acSettings.isAvailable) ? Number(acSettings.rate || 0) : 0;
+    const pricePerHead = dishesPricePerHead + acExtra;
     const estTotal = pricePerHead * Number(formData.guestCount || 0);
     const discAmount = (estTotal * Number(formData.discountPercentage || 0)) / 100;
     const finalTotal = estTotal - discAmount;
-    return { pricePerHead, estTotal, discAmount, finalTotal, packageName: selectedPkg?.title };
+    return {
+      dishesPricePerHead,
+      acExtra,
+      pricePerHead,
+      estTotal,
+      discAmount,
+      finalTotal,
+      packageName: selectedPkg?.title,
+    };
   };
 
   const handleSubmit = async (e) => {
@@ -127,17 +151,22 @@ export default function CateringPage() {
         }));
       }
 
+      const effectiveIsAC = Boolean(formData.isAC && acSettings.isAvailable);
       const payload = {
         clientName: formData.clientName,
         phone: formData.phone,
         eventDate: formData.eventDate,
         eventLocation: formData.eventLocation,
         guestCount: Number(formData.guestCount),
+        isAC: effectiveIsAC,
+        acChargePerHead: effectiveIsAC ? acSettings.rate : 0,
         selectedMenuItems: formattedItems,
         discountPercentage: Number(formData.discountPercentage) || 0,
-        notes: selectedPkg
-          ? `${formData.notes ? formData.notes + ' | ' : ''}Package: ${selectedPkg.title}`
-          : formData.notes,
+        notes: [
+          formData.notes,
+          selectedPkg ? `Package: ${selectedPkg.title}` : null,
+          effectiveIsAC ? `AC Surcharge: Rs. ${acSettings.rate}/head` : null,
+        ].filter(Boolean).join(' | '),
       };
 
       const res = await api.post('/catering', payload);
@@ -151,6 +180,7 @@ export default function CateringPage() {
           guestCount: 150,
           selectedMenuItemIds: [],
           selectedPackageId: '',
+          isAC: false,
           discountPercentage: 0,
           notes: '',
         });
@@ -378,18 +408,54 @@ export default function CateringPage() {
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                Discount Percentage (0 – 100%)
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={formData.discountPercentage}
-                onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })}
-                className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+              <div className={`flex items-center space-x-3 p-3.5 rounded-xl border transition-all ${
+                acSettings.isAvailable
+                  ? 'border-slate-200 bg-slate-50'
+                  : 'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed'
+              }`}>
+                <input
+                  type="checkbox"
+                  id="cateringAcToggle"
+                  disabled={!acSettings.isAvailable}
+                  checked={Boolean(formData.isAC && acSettings.isAvailable)}
+                  onChange={(e) => setFormData({ ...formData, isAC: e.target.checked })}
+                  className="w-5 h-5 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+                />
+                <label
+                  htmlFor="cateringAcToggle"
+                  className={`text-xs font-semibold ${acSettings.isAvailable ? 'text-slate-700 cursor-pointer' : 'text-slate-400 cursor-not-allowed'}`}
+                >
+                  <span className="block text-slate-900 font-bold flex items-center space-x-1.5">
+                    <Wind className="w-4 h-4 text-sky-600" />
+                    <span>Air Conditioning (AC)</span>
+                    {!acSettings.isAvailable && (
+                      <span className="text-[10px] uppercase font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-md ml-1">
+                        Not Available
+                      </span>
+                    )}
+                  </span>
+                  <span>
+                    {acSettings.isAvailable
+                      ? `Adds extra Rs. ${acSettings.rate} per head surcharge`
+                      : 'AC Surcharge is currently disabled globally'}
+                  </span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Discount Percentage (0 – 100%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.discountPercentage}
+                  onChange={(e) => setFormData({ ...formData, discountPercentage: e.target.value })}
+                  className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-hidden"
+                />
+              </div>
             </div>
 
             <button
@@ -407,9 +473,21 @@ export default function CateringPage() {
           <div className="space-y-3 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-800">
               <span className="text-slate-400">
-                {estimate.packageName ? `Total Price / Head (${estimate.packageName}):` : 'Total Price / Head:'}
+                {estimate.packageName ? `Dishes / Head (${estimate.packageName}):` : 'Dishes / Head:'}
               </span>
-              <span className="font-mono font-bold text-emerald-400">Rs. {estimate.pricePerHead}</span>
+              <span className="font-mono font-bold text-emerald-400">Rs. {estimate.dishesPricePerHead}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-800">
+              <span className="text-slate-400">AC Surcharge:</span>
+              <span className="font-mono text-sky-400">
+                {!acSettings.isAvailable
+                  ? 'Unavailable'
+                  : (formData.isAC ? `+Rs. ${acSettings.rate}/head` : 'None (0)')}
+              </span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-800">
+              <span className="text-slate-400">Total Price / Head:</span>
+              <span className="font-mono font-bold text-slate-200">Rs. {estimate.pricePerHead}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-800">
               <span className="text-slate-400">Guest Count:</span>
@@ -450,6 +528,7 @@ export default function CateringPage() {
                 <th className="px-6 py-3.5">Event Date</th>
                 <th className="px-6 py-3.5">Location</th>
                 <th className="px-6 py-3.5">Guests</th>
+                <th className="px-6 py-3.5">AC</th>
                 <th className="px-6 py-3.5">Dishes Count</th>
                 <th className="px-6 py-3.5">Total Amount</th>
                 <th className="px-6 py-3.5 text-right">Action</th>
@@ -465,6 +544,7 @@ export default function CateringPage() {
                   <td className="px-6 py-4">{new Date(o.eventDate).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-slate-500">{o.eventLocation || 'N/A'}</td>
                   <td className="px-6 py-4 font-bold">{o.guestCount}</td>
+                  <td className="px-6 py-4">{o.isAC ? `Yes (+${o.acChargePerHead || 100})` : 'No'}</td>
                   <td className="px-6 py-4">{o.selectedMenuItems?.length || 0} items</td>
                   <td className="px-6 py-4 font-bold font-mono text-emerald-700">Rs. {o.discountedTotal?.toLocaleString()}</td>
                   <td className="px-6 py-4 text-right">

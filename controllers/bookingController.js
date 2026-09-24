@@ -45,7 +45,7 @@ const getBookingById = async (req, res) => {
 const createBooking = async (req, res) => {
   try {
     const { clientName, phone, bookingDate, shift, hallType, guestCount,
-            isAC=false, menuItemIds=[], discountPercentage=0, notes="", customCateringPerHead=null } = req.body;
+            isAC=false, menuItemIds=[], discountPercentage=0, notes="", customCateringPerHead=null, customACChargePerHead=null, isACAvailable=null } = req.body;
 
     if (!clientName||!phone||!bookingDate||!shift||!hallType||!guestCount)
       return res.status(400).json({ success:false, message:"clientName, phone, bookingDate, shift, hallType, guestCount are required." });
@@ -67,7 +67,16 @@ const createBooking = async (req, res) => {
 
     let pricing;
     try {
-      pricing = await computeBookingPricing({ hallType, guestCount:Number(guestCount), isAC:Boolean(isAC), menuItemIds, discountPercentage:Number(discountPercentage), customCateringPerHead });
+      pricing = await computeBookingPricing({
+        hallType,
+        guestCount:Number(guestCount),
+        isAC:Boolean(isAC),
+        menuItemIds,
+        discountPercentage:Number(discountPercentage),
+        customCateringPerHead,
+        customACChargePerHead,
+        isACAvailable,
+      });
     } catch (pErr) { return res.status(400).json({ success:false, message:pErr.message }); }
 
     if (customCateringPerHead && (!pricing.selectedMenuItems || pricing.selectedMenuItems.length === 0)) {
@@ -210,12 +219,22 @@ const checkAvailability = async (req, res) => {
 
 const getPricingPreview = async (req, res) => {
   try {
-    const { hallType, guestCount, isAC=false, menuItemIds=[], discountPercentage=0, customCateringPerHead=null } = req.body;
+    const { hallType, guestCount, isAC=false, menuItemIds=[], discountPercentage=0, customCateringPerHead=null, customACChargePerHead=null, isACAvailable=null } = req.body;
     if (!hallType||!guestCount) return res.status(400).json({ success:false, message:"hallType and guestCount required." });
-    const pricing = await computeBookingPricing({ hallType, guestCount:Number(guestCount), isAC:Boolean(isAC), menuItemIds, discountPercentage:Number(discountPercentage), customCateringPerHead });
+    const pricing = await computeBookingPricing({
+      hallType,
+      guestCount:Number(guestCount),
+      isAC:Boolean(isAC),
+      menuItemIds,
+      discountPercentage:Number(discountPercentage),
+      customCateringPerHead,
+      customACChargePerHead,
+      isACAvailable,
+    });
     res.status(200).json({ success:true, message:"Pricing preview calculated.",
       pricing:{ basePricePerHead:pricing.basePricePerHead, cateringPricePerHead:pricing.cateringPricePerHead,
-        acSurcharge:pricing.acSurcharge, totalPerHead:pricing.totalPerHead, guestCount:pricing.guestCount,
+        acSurcharge:pricing.acSurcharge, acChargePerHead:pricing.acChargePerHead, isAC:pricing.isAC, isACAvailable:pricing.isACAvailable,
+        totalPerHead:pricing.totalPerHead, guestCount:pricing.guestCount,
         estimatedTotal:pricing.estimatedTotal, discountPercentage:pricing.discountPercentage,
         discountAmount:pricing.discountAmount, discountedTotal:pricing.discountedTotal,
         selectedMenuItems:pricing.selectedMenuItems, breakdown:pricing.breakdown } });

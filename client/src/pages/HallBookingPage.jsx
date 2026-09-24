@@ -22,6 +22,7 @@ export default function HallBookingPage() {
   const [bookings, setBookings] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [acSettings, setAcSettings] = useState({ rate: 100, isAvailable: true });
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -48,6 +49,7 @@ export default function HallBookingPage() {
     fetchBookings();
     fetchMenuItems();
     fetchPackages();
+    fetchACSettings();
   }, [calendarMonth, calendarYear]);
 
   useEffect(() => {
@@ -61,6 +63,8 @@ export default function HallBookingPage() {
     formData.menuItemIds,
     formData.selectedPackageId,
     formData.discountPercentage,
+    acSettings.rate,
+    acSettings.isAvailable,
   ]);
 
   const fetchCalendarData = async () => {
@@ -105,6 +109,17 @@ export default function HallBookingPage() {
     }
   };
 
+  const fetchACSettings = async () => {
+    try {
+      const res = await api.get('/menu/ac-surcharge');
+      if (res.data.success && res.data.data) {
+        setAcSettings(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load AC surcharge settings:', err);
+    }
+  };
+
   const calculateLivePricing = async () => {
     try {
       const selectedPkg = packages.find((p) => p._id === formData.selectedPackageId);
@@ -114,10 +129,12 @@ export default function HallBookingPage() {
       const res = await api.post('/bookings/pricing-preview', {
         hallType: formData.hallType,
         guestCount: Number(formData.guestCount),
-        isAC: formData.isAC,
+        isAC: Boolean(formData.isAC && acSettings.isAvailable),
         menuItemIds: effectiveMenuIds,
         discountPercentage: Number(formData.discountPercentage) || 0,
         customCateringPerHead,
+        customACChargePerHead: acSettings.rate,
+        isACAvailable: acSettings.isAvailable,
       });
       if (res.data.success) {
         setPricingPreview(res.data.pricing);
@@ -169,10 +186,14 @@ export default function HallBookingPage() {
       const customCateringPerHead = selectedPkg ? selectedPkg.pricePerHead : null;
       const effectiveMenuIds = selectedPkg ? [] : formData.menuItemIds;
 
+      const effectiveIsAC = Boolean(formData.isAC && acSettings.isAvailable);
       const payload = {
         ...formData,
+        isAC: effectiveIsAC,
         menuItemIds: effectiveMenuIds,
         customCateringPerHead,
+        customACChargePerHead: acSettings.rate,
+        isACAvailable: acSettings.isAvailable,
         packageName: selectedPkg ? selectedPkg.title : undefined,
       };
 
@@ -575,20 +596,34 @@ export default function HallBookingPage() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
-              <div className="flex items-center space-x-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+              <div className={`flex items-center space-x-3 p-3.5 rounded-xl border transition-all ${
+                acSettings.isAvailable
+                  ? 'border-slate-200 bg-slate-50'
+                  : 'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed'
+              }`}>
                 <input
                   type="checkbox"
                   id="acToggle"
-                  checked={formData.isAC}
+                  disabled={!acSettings.isAvailable}
+                  checked={Boolean(formData.isAC && acSettings.isAvailable)}
                   onChange={(e) => setFormData({ ...formData, isAC: e.target.checked })}
-                  className="w-5 h-5 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                  className="w-5 h-5 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
                 />
-                <label htmlFor="acToggle" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                  <span className="block text-slate-900 font-bold flex items-center space-x-1">
+                <label htmlFor="acToggle" className={`text-xs font-semibold ${acSettings.isAvailable ? 'text-slate-700 cursor-pointer' : 'text-slate-400 cursor-not-allowed'}`}>
+                  <span className="block text-slate-900 font-bold flex items-center space-x-1.5">
                     <Wind className="w-4 h-4 text-sky-600" />
                     <span>Air Conditioning (AC)</span>
+                    {!acSettings.isAvailable && (
+                      <span className="text-[10px] uppercase font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-md ml-1">
+                        Not Available
+                      </span>
+                    )}
                   </span>
-                  <span>Adds extra Rs. 100 per head surcharge</span>
+                  <span>
+                    {acSettings.isAvailable
+                      ? `Adds extra Rs. ${acSettings.rate} per head surcharge`
+                      : 'AC Surcharge is currently disabled globally'}
+                  </span>
                 </label>
               </div>
 
@@ -658,7 +693,11 @@ export default function HallBookingPage() {
 
                 <div className="flex justify-between py-1 border-b border-slate-800/60">
                   <span className="text-slate-400">AC Surcharge:</span>
-                  <span className="font-mono text-sky-400">{formData.isAC ? '+Rs. 100/head' : 'None (0)'}</span>
+                  <span className="font-mono text-sky-400">
+                    {!acSettings.isAvailable
+                      ? 'Unavailable'
+                      : (formData.isAC ? `+Rs. ${acSettings.rate}/head` : 'None (0)')}
+                  </span>
                 </div>
 
                 <div className="flex justify-between py-1 border-b border-slate-800/60">
@@ -735,7 +774,7 @@ export default function HallBookingPage() {
                   </td>
                   <td className="px-6 py-4">{b.hallType}</td>
                   <td className="px-6 py-4 font-bold">{b.guestCount}</td>
-                  <td className="px-6 py-4">{b.isAC ? 'Yes (+100)' : 'No'}</td>
+                  <td className="px-6 py-4">{b.isAC ? `Yes (+${b.acChargePerHead || 100})` : 'No'}</td>
                   <td className="px-6 py-4 font-bold font-mono text-emerald-700">
                     Rs. {b.discountedTotal?.toLocaleString()}
                   </td>

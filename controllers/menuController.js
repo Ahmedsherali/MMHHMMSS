@@ -1,4 +1,5 @@
 const MenuPricing = require("../models/MenuPricing");
+const Setting = require("../models/Setting");
 
 const getAllMenuItems = async (req, res) => {
   try {
@@ -60,4 +61,43 @@ const deleteMenuItem = async (req, res) => {
   }
 };
 
-module.exports = { getAllMenuItems, getMenuItemById, createMenuItem, updateMenuItem, deleteMenuItem };
+const getACSurcharge = async (req, res) => {
+  try {
+    const setting = await Setting.getSetting("ac_surcharge", { rate: 100, isAvailable: true });
+    res.status(200).json({ success: true, data: setting });
+  } catch (error) {
+    console.error("Get AC Surcharge Error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to fetch AC surcharge setting.", error: error.message });
+  }
+};
+
+const updateACSurcharge = async (req, res) => {
+  try {
+    const { rate, isAvailable } = req.body;
+    if (rate === undefined || rate === null || Number(rate) < 0) {
+      return res.status(400).json({ success: false, message: "Valid surcharge rate is required." });
+    }
+    const updated = await Setting.setSetting("ac_surcharge", {
+      rate: Number(rate),
+      isAvailable: Boolean(isAvailable),
+    });
+    res.status(200).json({
+      success: true,
+      message: "AC Surcharge settings updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Update AC Surcharge Error:", error.message);
+    res.status(500).json({ success: false, message: "Failed to update AC surcharge setting.", error: error.message });
+  }
+};
+
+module.exports = {
+  getAllMenuItems,
+  getMenuItemById,
+  createMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
+  getACSurcharge,
+  updateACSurcharge,
+};
