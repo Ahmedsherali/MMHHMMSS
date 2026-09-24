@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UtensilsCrossed, Plus, CheckCircle2, AlertCircle, Trash2, Package, Wind } from 'lucide-react';
 import api from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
+import InvoiceModal from '../components/InvoiceModal';
 
 export default function CateringPage() {
   const [orders, setOrders] = useState([]);
@@ -25,6 +26,7 @@ export default function CateringPage() {
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [invoiceData, setInvoiceData] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -171,7 +173,31 @@ export default function CateringPage() {
 
       const res = await api.post('/catering', payload);
       if (res.data.success) {
-        setSuccess(`Catering order created for ${formData.clientName}! Total: Rs. ${res.data.data.discountedTotal.toLocaleString()}`);
+        const c = res.data.data; // saved catering order document
+        const invoiceDateStr = new Date(formData.eventDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const invNum = String(Math.floor(1000 + Math.random() * 9000));
+
+        setInvoiceData({
+          type: 'catering',
+          invoiceId: `INV-${new Date().getFullYear()}-${invNum}`,
+          clientName: formData.clientName,
+          phone: formData.phone,
+          date: invoiceDateStr,
+          eventLocation: formData.eventLocation,
+          guestCount: Number(formData.guestCount),
+          packageName: selectedPkg ? selectedPkg.title : null,
+          selectedDishes: formattedItems.map((d) => ({ dishName: d.dishName, pricePerHead: d.pricePerHead })),
+          basePricePerHead: 0,
+          cateringPricePerHead: c.totalPricePerHead || 0,
+          acChargePerHead: effectiveIsAC ? (c.acChargePerHead || acSettings.rate) : 0,
+          isAC: effectiveIsAC,
+          estimatedTotal: c.estimatedTotal || 0,
+          discountPercentage: c.discountPercentage || 0,
+          discountAmount: c.discountAmount || 0,
+          discountedTotal: c.discountedTotal || 0,
+        });
+
+        setSuccess(`Catering order created for ${formData.clientName}! Total: Rs. ${c.discountedTotal.toLocaleString()}`);
         setFormData({
           clientName: '',
           phone: '',
@@ -568,6 +594,11 @@ export default function CateringPage() {
         confirmLabel="Yes, Delete"
         onConfirm={executeDelete}
         onCancel={() => setConfirmTarget(null)}
+      />
+      <InvoiceModal
+        open={!!invoiceData}
+        data={invoiceData}
+        onClose={() => setInvoiceData(null)}
       />
 
     </div>

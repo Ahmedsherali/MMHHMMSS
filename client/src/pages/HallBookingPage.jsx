@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
+import InvoiceModal from '../components/InvoiceModal';
 
 export default function HallBookingPage() {
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth() + 1);
@@ -43,6 +44,7 @@ export default function HallBookingPage() {
   const [formSuccess, setFormSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [invoiceData, setInvoiceData] = useState(null);
 
   useEffect(() => {
     fetchCalendarData();
@@ -199,7 +201,38 @@ export default function HallBookingPage() {
 
       const res = await api.post('/bookings', payload);
       if (res.data.success) {
-        setFormSuccess(`Booking confirmed for ${formData.clientName}! Total: Rs. ${res.data.data.discountedTotal.toLocaleString()}`);
+        const b = res.data.data; // saved booking document
+        const invoiceDateStr = new Date(formData.bookingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const invNum = String(Math.floor(1000 + Math.random() * 9000));
+        const effectiveIsAC = Boolean(formData.isAC && acSettings.isAvailable);
+
+        // Resolve selected dishes for line items
+        const dishes = effectiveMenuIds.length > 0
+          ? menuItems.filter((m) => effectiveMenuIds.includes(m._id)).map((m) => ({ dishName: m.dishName, pricePerHead: m.pricePerHead }))
+          : [];
+
+        setInvoiceData({
+          type: 'booking',
+          invoiceId: `INV-${new Date().getFullYear()}-${invNum}`,
+          clientName: formData.clientName,
+          phone: formData.phone,
+          date: invoiceDateStr,
+          shift: formData.shift,
+          hallType: formData.hallType,
+          guestCount: Number(formData.guestCount),
+          packageName: selectedPkg ? selectedPkg.title : null,
+          selectedDishes: dishes,
+          basePricePerHead: b.basePricePerHead || 0,
+          cateringPricePerHead: b.cateringPricePerHead || 0,
+          acChargePerHead: effectiveIsAC ? (b.acChargePerHead || acSettings.rate) : 0,
+          isAC: effectiveIsAC,
+          estimatedTotal: b.estimatedTotal || 0,
+          discountPercentage: b.discountPercentage || 0,
+          discountAmount: b.discountAmount || 0,
+          discountedTotal: b.discountedTotal || 0,
+        });
+
+        setFormSuccess(`Booking confirmed for ${formData.clientName}! Total: Rs. ${b.discountedTotal.toLocaleString()}`);
         setFormData({
           clientName: '',
           phone: '',
@@ -809,6 +842,11 @@ export default function HallBookingPage() {
         confirmLabel="Yes, Cancel Slot"
         onConfirm={executeCancelBooking}
         onCancel={() => setConfirmTarget(null)}
+      />
+      <InvoiceModal
+        open={!!invoiceData}
+        data={invoiceData}
+        onClose={() => setInvoiceData(null)}
       />
 
     </div>
