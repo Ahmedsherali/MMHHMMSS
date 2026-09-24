@@ -17,7 +17,7 @@ const resolveMenuItems = async (menuItemIds = []) => {
   } catch (error) { throw new Error("Menu resolution failed: " + error.message); }
 };
 
-const calculatePricing = ({ hallType, guestCount, isAC=false, resolvedMenuItems=[], discountPercentage=0, customBasePerHead=null }) => {
+const calculatePricing = ({ hallType, guestCount, isAC=false, resolvedMenuItems=[], discountPercentage=0, customBasePerHead=null, customCateringPerHead=null }) => {
   if (!hallType) throw new Error("hallType is required.");
   const guests = Number(guestCount);
   if (!guests || guests < 1) throw new Error("guestCount must be at least 1.");
@@ -27,9 +27,14 @@ const calculatePricing = ({ hallType, guestCount, isAC=false, resolvedMenuItems=
 
   let cateringPricePerHead = 0;
   if (hallType === "Hall with Catering") {
-    if (!resolvedMenuItems || resolvedMenuItems.length === 0)
-      throw new Error("At least one menu item required for Hall with Catering.");
-    cateringPricePerHead = resolvedMenuItems.reduce((sum, item) => sum + (item.pricePerHead || 0), 0);
+    if (customCateringPerHead !== null && customCateringPerHead !== undefined) {
+      // Package-based pricing: use the package price per head directly
+      cateringPricePerHead = Number(customCateringPerHead);
+    } else {
+      if (!resolvedMenuItems || resolvedMenuItems.length === 0)
+        throw new Error("At least one menu item required for Hall with Catering.");
+      cateringPricePerHead = resolvedMenuItems.reduce((sum, item) => sum + (item.pricePerHead || 0), 0);
+    }
   }
 
   const acChargePerHead = PRICING_CONSTANTS.AC_SURCHARGE;
@@ -58,10 +63,10 @@ const calculatePricing = ({ hallType, guestCount, isAC=false, resolvedMenuItems=
     totalPerHead, acSurcharge, guestCount: guests, breakdown };
 };
 
-const computeBookingPricing = async ({ hallType, guestCount, isAC=false, menuItemIds=[], discountPercentage=0, customBasePerHead=null }) => {
+const computeBookingPricing = async ({ hallType, guestCount, isAC=false, menuItemIds=[], discountPercentage=0, customBasePerHead=null, customCateringPerHead=null }) => {
   try {
     const resolvedMenuItems = hallType === "Hall with Catering" ? await resolveMenuItems(menuItemIds) : [];
-    return calculatePricing({ hallType, guestCount, isAC, resolvedMenuItems, discountPercentage, customBasePerHead });
+    return calculatePricing({ hallType, guestCount, isAC, resolvedMenuItems, discountPercentage, customBasePerHead, customCateringPerHead });
   } catch (error) { throw new Error("Pricing computation failed: " + error.message); }
 };
 

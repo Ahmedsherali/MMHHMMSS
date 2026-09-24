@@ -11,6 +11,7 @@ const bookingRoutes =require("./routes/bookingRoutes");
 const cateringRoutes=require("./routes/cateringRoutes");
 const expenseRoutes =require("./routes/expenseRoutes");
 const workerRoutes  =require("./routes/workerRoutes");
+const packageRoutes =require("./routes/packageRoutes");
 
 
 const app=express();
@@ -45,6 +46,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/catering", cateringRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/workers",  workerRoutes);
+app.use("/api/packages", packageRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

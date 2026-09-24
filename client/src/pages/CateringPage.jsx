@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UtensilsCrossed, Plus, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { UtensilsCrossed, Plus, CheckCircle2, AlertCircle, Trash2, Package } from 'lucide-react';
 import api from '../services/api';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -47,6 +47,13 @@ export default function CateringPage() {
     } catch (err) {
       console.error('Failed to load dishes:', err);
     }
+  };
+
+  const fetchPackages = async () => {
+    try {
+      const res = await api.get('/packages');
+      if (res.data.success) setPackages(res.data.data);
+    } catch (err) { console.error('Failed to load packages:', err); }
   };
 
   const handleDishToggle = (dishId) => {

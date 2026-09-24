@@ -91,6 +91,15 @@ export default function HallBookingPage() {
     }
   };
 
+  const fetchPackages = async () => {
+    try {
+      const res = await api.get('/packages');
+      if (res.data.success) setPackages(res.data.data);
+    } catch (err) {
+      console.error('Failed to load packages:', err);
+    }
+  };
+
   const calculateLivePricing = async () => {
     try {
       const res = await api.post('/bookings/pricing-preview', {

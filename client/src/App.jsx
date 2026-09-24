@@ -13,6 +13,7 @@ import MenuPricingPage from './pages/MenuPricingPage';
 import ExpensesPage from './pages/ExpensesPage';
 import TeamManagementPage from './pages/TeamManagementPage';
 import CredentialsPage from './pages/CredentialsPage';
+import PackagesPage from './pages/PackagesPage';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,6 +25,7 @@ function AppLayout() {
       case '/bookings': return 'Hall Bookings & Calendar';
       case '/catering': return 'Catering Orders';
       case '/menu': return 'Menu & Global Pricing';
+      case '/packages': return 'Event Packages';
       case '/expenses': return 'Expenses Tracking';
       case '/team': return 'Team & Workers';
       case '/credentials': return 'Credentials';
@@ -42,6 +44,7 @@ function AppLayout() {
             <Route path="/bookings" element={<HallBookingPage />} />
             <Route path="/catering" element={<CateringPage />} />
             <Route path="/menu" element={<MenuPricingPage />} />
+            <Route path="/packages" element={<PackagesPage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/team" element={<TeamManagementPage />} />
             <Route path="/credentials" element={<CredentialsPage />} />

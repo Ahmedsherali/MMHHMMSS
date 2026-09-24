@@ -11,7 +11,8 @@ import {
   Building2,
   X,
   AlertTriangle,
-  KeyRound
+  KeyRound,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Hall Bookings & Calendar', href: '/bookings',    icon: CalendarDays },
   { name: 'Catering Orders',          href: '/catering',    icon: UtensilsCrossed },
   { name: 'Menu & Pricing',           href: '/menu',        icon: BookOpenText },
+  { name: 'Packages',                  href: '/packages',    icon: Package },
   { name: 'Expenses Tracking',        href: '/expenses',    icon: Receipt },
   { name: 'Team & Workers',           href: '/team',        icon: Users },
   { name: 'Credentials',              href: '/credentials', icon: KeyRound },
